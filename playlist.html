@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🎵 Mi Playlist para ti</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Raleway:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --pink: #ff4d8f;
+      --rose: #ff1f6d;
+      --gold: #ffd700;
+      --soft: #ffe0f0;
+      --glass: rgba(255,255,255,0.06);
+    }
+
+    body {
+      background: #000;
+      font-family: 'Raleway', sans-serif;
+      color: #fff;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ══════════════ CANVAS DE FONDO ══════════════ */
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ══════════════ CORAZONES CAYENDO ══════════════ */
+    .hearts-container {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .heart {
+      position: absolute;
+      top: -60px;
+      font-size: 1.4rem;
+      animation: fall linear infinite;
+      opacity: 0;
+      user-select: none;
+    }
+    @keyframes fall {
+      0%   { transform: translateY(0) rotate(0deg) scale(0.8); opacity: 0; }
+      10%  { opacity: 0.9; }
+      90%  { opacity: 0.6; }
+      100% { transform: translateY(110vh) rotate(360deg) scale(1.1); opacity: 0; }
+    }
+
+    /* ══════════════ BRILLOS ══════════════ */
+    .sparkle {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+      animation: sparkleAnim ease-in-out infinite;
+    }
+    @keyframes sparkleAnim {
+      0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; }
+      50%       { transform: scale(1) rotate(180deg); opacity: 1; }
+    }
+
+    /* ══════════════ LAYOUT ══════════════ */
+    .page {
+      position: relative;
+      z-index: 10;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 60px 20px 80px;
+    }
+
+    /* ══════════════ HEADER ══════════════ */
+    header {
+      text-align: center;
+      margin-bottom: 70px;
+    }
+    header .subtitle {
+      font-size: 0.75rem;
+      letter-spacing: 0.35em;
+      color: var(--pink);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.4rem, 6vw, 4rem);
+      font-style: italic;
+      background: linear-gradient(135deg, #fff 30%, var(--pink) 60%, var(--gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+    }
+    header .line {
+      width: 80px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--pink), var(--gold), transparent);
+      margin: 18px auto 0;
+    }
+
+    /* ══════════════ SECCIONES ══════════════ */
+    .section {
+      margin-bottom: 40px;
+      border: 1px solid rgba(255,77,143,0.25);
+      border-radius: 20px;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+      background: var(--glass);
+      box-shadow: 0 0 30px rgba(255,77,143,0.08), inset 0 1px 0 rgba(255,255,255,0.07);
+      transition: box-shadow 0.4s;
+    }
+    .section:hover {
+      box-shadow: 0 0 50px rgba(255,77,143,0.18), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+
+    /* ══════════════ BOTÓN DESPLEGABLE ══════════════ */
+    .toggle-btn {
+      width: 100%;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 26px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .toggle-btn:focus-visible { outline: 2px solid var(--pink); }
+
+    .btn-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .section-number {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-style: italic;
+      color: var(--pink);
+      opacity: 0.7;
+      min-width: 36px;
+      line-height: 1;
+    }
+    .section-info h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      color: #fff;
+      text-align: left;
+      line-height: 1.2;
+    }
+    .section-info p {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 3px;
+      text-align: left;
+    }
+
+    .arrow {
+      width: 28px;
+      height: 28px;
+      border: 1.5px solid rgba(255,77,143,0.5);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: transform 0.4s cubic-bezier(.34,1.56,.64,1), background 0.3s;
+    }
+    .arrow svg { fill: var(--pink); width: 12px; height: 12px; transition: fill 0.3s; }
+    .toggle-btn:hover .arrow { background: rgba(255,77,143,0.15); }
+    .section.open .arrow { transform: rotate(180deg); background: rgba(255,77,143,0.2); }
+
+    /* ══════════════ PANEL DESPLEGABLE ══════════════ */
+    .panel {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.55s cubic-bezier(0.4,0,0.2,1);
+    }
+    .section.open .panel { max-height: 2000px; }
+
+    .panel-inner {
+      padding: 0 28px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,77,143,0.3), transparent);
+      margin-bottom: 8px;
+    }
+
+    /* ══════════════ TARJETA DE CANCIÓN ══════════════ */
+    .song-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 14px 18px;
+      text-decoration: none;
+      color: inherit;
+      transition: background 0.3s, border-color 0.3s, transform 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .song-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,77,143,0.06), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .song-card:hover {
+      background: rgba(255,77,143,0.1);
+      border-color: rgba(255,77,143,0.4);
+      transform: translateX(4px);
+    }
+    .song-card:hover::before { opacity: 1; }
+
+    .song-img {
+      width: 56px;
+      height: 56px;
+      border-radius: 10px;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,77,143,0.3);
+      background: rgba(255,77,143,0.1);
+    }
+    .song-img-placeholder {
+      width: 56px;
+      height: 56px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,77,143,0.3);
+      background: rgba(255,77,143,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+    .song-text { flex: 1; min-width: 0; }
+    .song-title {
+      font-size: 0.97rem;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .song-artist {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.5);
+      margin-top: 3px;
+    }
+    .song-link-icon {
+      font-size: 1.1rem;
+      color: var(--pink);
+      opacity: 0.7;
+      flex-shrink: 0;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .song-card:hover .song-link-icon { opacity: 1; transform: scale(1.2); }
+
+    /* ══════════════ FOOTER ══════════════ */
+    footer {
+      text-align: center;
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.2);
+      margin-top: 60px;
+    }
+    footer span { color: var(--pink); }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div class="hearts-container" id="hearts"></div>
+
+<div class="page">
+  <header>
+    <p class="subtitle">✦ Lo que siento por ti expresado atraves de canciones ✦</p>
+    <h1>Mi Playlist para ti</h1>
+    <div class="line"></div>
+  </header>
+
+  <!-- ══════════════ PARTE 1 ══════════════ -->
+  <div class="section" id="section1">
+    <button class="toggle-btn" onclick="toggleSection('section1')" aria-expanded="false">
+      <div class="btn-left">
+        <span class="section-number">01</span>
+        <div class="section-info">
+          <h2>Damiano David</h2>
+          <!-- 🎨 CAMBIA ESTE SUBTÍTULO SI QUIERES -->
+        </div>
+      </div>
+      <div class="arrow">
+        <svg viewBox="0 0 12 12"><path d="M6 8L1 3h10z"/></svg>
+      </div>
+    </button>
+    <div class="panel">
+      <div class="panel-inner">
+        <div class="divider"></div>
+
+        <!-- 🎵🎵🎵 PARTE 1 — AGREGA TUS CANCIONES AQUÍ 🎵🎵🎵
+             Copia y pega el bloque <a class="song-card"> para cada canción.
+             Reemplaza:
+               href="URL_DE_LA_CANCION_1"     → link de YouTube, Spotify, etc.
+               src="URL_DE_LA_IMAGEN_1"       → imagen de portada (o borra el <img> para usar el emoji)
+               "Título de la Canción"         → nombre de la canción
+               "Artista"                      → nombre del artista
+        -->
+
+        <a class="song-card" href="https://youtu.be/ROswv8D77y0" target="_blank" rel="noopener">
+          <!-- OPCIÓN A: con imagen -->
+          <!-- <img class="song-img" src="URL_DE_LA_IMAGEN_1" alt="portada"> -->
+          <!-- OPCIÓN B: solo emoji -->
+          <div class="song-img-placeholder">🎵</div>
+          <div class="song-text">
+            <div class="song-title">Angel</div>
+            <div class="song-artist">Damiano David</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/PVSV7HASQLk" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎶</div>
+          <div class="song-text">
+            <div class="song-title">Mysterious Girl</div>
+            <div class="song-artist">Damiano David</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/Uii9HdZ723k" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎤</div>
+          <div class="song-text">
+            <div class="song-title">The First Time</div>
+            <div class="song-artist">Damiano David</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+         <a class="song-card" href="https://youtu.be/bjg9lS8T3tI" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎤</div>
+          <div class="song-text">
+            <div class="song-title">Zombie Lady</div>
+            <div class="song-artist">Damiano David</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+         <a class="song-card" href="https://youtu.be/n7zRs0QyjLQ" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎤</div>
+          <div class="song-text">
+            <div class="song-title">Tango</div>
+            <div class="song-artist">Damiano David</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/3bAb09gLUPY" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎤</div>
+          <div class="song-text">
+            <div class="song-title">Cinnamon</div>
+            <div class="song-artist">Damiano David</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/GLRl11G1Sbo" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎤</div>
+          <div class="song-text">
+            <div class="song-title">Sick of myself</div>
+            <div class="song-artist">Damiano David</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/Z0TgxTlwiVw" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎤</div>
+          <div class="song-text">
+            <div class="song-title">Tangarine. She is Nova</div>
+            <div class="song-artist">Damiano David</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/cEAlRW90V8s" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎤</div>
+          <div class="song-text">
+            <div class="song-title">Mars</div>
+            <div class="song-artist">Damiano David</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/5jTMfVwwqfc" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎤</div>
+          <div class="song-text">
+            <div class="song-title">Voices</div>
+            <div class="song-artist">Damiano David</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <!-- 🎵 FIN PARTE 1 🎵 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ PARTE 2 ══════════════ -->
+  <div class="section" id="section2">
+    <button class="toggle-btn" onclick="toggleSection('section2')" aria-expanded="false">
+      <div class="btn-left">
+        <span class="section-number">02</span>
+        <div class="section-info">
+          <h2>Maneskin</h2>
+          <!-- 🎨 CAMBIA ESTE SUBTÍTULO SI QUIERES -->
+        </div>
+      </div>
+      <div class="arrow">
+        <svg viewBox="0 0 12 12"><path d="M6 8L1 3h10z"/></svg>
+      </div>
+    </button>
+    <div class="panel">
+      <div class="panel-inner">
+        <div class="divider"></div>
+
+        <!-- 🎵🎵🎵 PARTE 2 — AGREGA TUS CANCIONES AQUÍ 🎵🎵🎵 -->
+
+        <a class="song-card" href="https://youtu.be/PO5kceBVNIE" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎼</div>
+          <div class="song-text">
+            <div class="song-title">Coraline</div>
+            <div class="song-artist">Maneskin</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/96NyPuNb818" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎸</div>
+          <div class="song-text">
+            <div class="song-title">I wanna be your slave</div>
+            <div class="song-artist">Maneskin</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/21SpBlPNNY0" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎹</div>
+          <div class="song-text">
+            <div class="song-title">Own My Mind</div>
+            <div class="song-artist">Maneskin</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/EbMkh8vQaE0" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎼</div>
+          <div class="song-text">
+            <div class="song-title">Baby Said</div>
+            <div class="song-artist">Maneskin</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/7YrnNqUil3Q" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎼</div>
+          <div class="song-text">
+            <div class="song-title">If Not For You</div>
+            <div class="song-artist">Maneskin</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/AFY7vGxEbgE" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎼</div>
+          <div class="song-text">
+            <div class="song-title">Read Your Diary</div>
+            <div class="song-artist">Maneskin</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/AHOLU0ZJj9M" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎼</div>
+          <div class="song-text">
+            <div class="song-title">For Your Love</div>
+            <div class="song-artist">Maneskin</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/H05BX_PKUrU?si=0_wpNtCwYungMYM-" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎼</div>
+          <div class="song-text">
+            <div class="song-title">Feel</div>
+            <div class="song-artist">Maneskin</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/Szte0asbPf0?si=Os0vNNFN8yvnn6fd" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎼</div>
+          <div class="song-text">
+            <div class="song-title">Moriro da re Esta no te la dedico pero me acordo a como era antes entonces la pongo xD</div>
+            <div class="song-artist">Maneskin</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+
+        <!-- 🎵 FIN PARTE 2 🎵 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ PARTE 3 ══════════════ -->
+  <div class="section" id="section3">
+    <button class="toggle-btn" onclick="toggleSection('section3')" aria-expanded="false">
+      <div class="btn-left">
+        <span class="section-number">03</span>
+        <div class="section-info">
+          <h2>Mas artistas</h2>
+          <!-- 🎨 CAMBIA ESTE SUBTÍTULO SI QUIERES -->
+        </div>
+      </div>
+      <div class="arrow">
+        <svg viewBox="0 0 12 12"><path d="M6 8L1 3h10z"/></svg>
+      </div>
+    </button>
+    <div class="panel">
+      <div class="panel-inner">
+        <div class="divider"></div>
+
+        <!-- 🎵🎵🎵 PARTE 3 — AGREGA TUS CANCIONES AQUÍ 🎵🎵🎵 -->
+
+        <a class="song-card" href="https://youtu.be/4ZadjZXxyNU?si=fJ4whLrC_F_MNlFy" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎧</div>
+          <div class="song-text">
+            <div class="song-title">Quiereme Asi</div>
+            <div class="song-artist">Nanpa Basico</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/l9WCyaTbQkI?si=7CumT5SUa-0tD-PL" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🥁</div>
+          <div class="song-text">
+            <div class="song-title">Solo tu</div>
+            <div class="song-artist">Nanpa Basico</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/XL01h_pgRWc?si=OzAOcLvPfxSbXwPK" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Amor Libre</div>
+            <div class="song-artist">Nach</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/YNPhcMFEJvc?si=zBYI5mynlxTasVAZ" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Materia Gris</div>
+            <div class="song-artist">El Rique</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/YNPhcMFEJvc?si=zBYI5mynlxTasVAZ" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Te invito</div>
+            <div class="song-artist">Herencia de timbiqui</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/YNPhcMFEJvc?si=zBYI5mynlxTasVAZ" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Te invito</div>
+            <div class="song-artist">Herencia de timbiqui</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/8I9p51miDQE?si=-yJ_e4T7JqusOCni" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Normal</div>
+            <div class="song-artist">Alcolirykoz</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/XIpVFtqe-3g?si=OEeo52eKw1cA4wjy" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">No hay flores en venus</div>
+            <div class="song-artist">Alcolirykoz</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/DhAQLSj3TL4?si=4wWH4RPKyfY8DTDt" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Sebastian</div>
+            <div class="song-artist">Oblivion's Mighty Trash</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/7h2ryr_uUEs?si=mM3_jMDOE8fX63py" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Labios rotos</div>
+            <div class="song-artist">Zoé</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/NXwZnB06Hkg?si=ARVPPjVFP2Ehz_kP" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Bonita</div>
+            <div class="song-artist">Los Choclok</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/YNPhcMFEJvc?si=zBYI5mynlxTasVAZ" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">I Wanna Be Yours</div>
+            <div class="song-artist">Artic Monkeys</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/yQkYdDTrcKk?si=KyOxlvR-Z96vTm2Q" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Poesia. Tu eres mi poesia</div>
+            <div class="song-artist">Los Aldeanos</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/XnYTgGxcu8Y?si=nTA6ypRXgPDTrSSd" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Quiero estar contigo</div>
+            <div class="song-artist">Al2 El Aldeano</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/x1x_s3uD6AY?si=T819ernwytcp71Py" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Un Beso Tuyo</div>
+            <div class="song-artist">Al2 El Aldeano</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/n2aFHv1i0YA?si=_ClJEX7R9wmtU9gM" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Contigo</div>
+            <div class="song-artist">Al2 El Addenao</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/AtE8zTJutVQ?si=62am6fTsZ-5JWQeV" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Luna</div>
+            <div class="song-artist">Afaz Natural</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/lvzsE__EaNM?si=zizVrl0VPCI5Ij0V" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Coctel espacial</div>
+            <div class="song-artist">Lianna</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/qStdyB63Ojg?si=fIB8IsRrXF3CVX7C" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Stop The World I Wanna Get Off With You</div>
+            <div class="song-artist">Artic Monkeys</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/pzh4y0ZnxL0?si=44k1V88TOUS9R5UF" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Riptide</div>
+            <div class="song-artist">Vance Joy</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        
+
+        <!-- 🎵 FIN PARTE 3 🎵 -->
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="section4">
+    <button class="toggle-btn" onclick="toggleSection('section4')" aria-expanded="false">
+      <div class="btn-left">
+        <span class="section-number">04</span>
+        <div class="section-info">
+          <h2>Mas artistas 2</h2>
+          <!-- 🎨 CAMBIA ESTE SUBTÍTULO SI QUIERES -->
+        </div>
+      </div>
+      <div class="arrow">
+        <svg viewBox="0 0 12 12"><path d="M6 8L1 3h10z"/></svg>
+      </div>
+    </button>
+    <div class="panel">
+      <div class="panel-inner">
+        <div class="divider"></div>
+
+        <a class="song-card" href="https://youtu.be/G902a4AZ_Xc?si=x6yGTSL0CYEGMrJp" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Electric Love</div>
+            <div class="song-artist">BØRNS</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/cSFDSn3BJAo?si=Od_lrNJqPYMEyxpP" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Daylight</div>
+            <div class="song-artist">David Kushner</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+        <a class="song-card" href="https://youtu.be/GqhFZEaZwpI?si=K6Io-twDu6PcvH4Z" target="_blank" rel="noopener">
+          <div class="song-img-placeholder">🎺</div>
+          <div class="song-text">
+            <div class="song-title">Sol</div>
+            <div class="song-artist">William</div>
+          </div>
+          <span class="song-link-icon">♫</span>
+        </a>
+
+
+  <footer>Con todo mi amor <span>♥</span> &nbsp;·&nbsp; Una Playlist que me acuerda a ti </footer>
+</div>
+
+<script>
+  /* ══════════════ TOGGLE ══════════════ */
+  function toggleSection(id) {
+    const sec = document.getElementById(id);
+    const btn = sec.querySelector('.toggle-btn');
+    const isOpen = sec.classList.contains('open');
+    sec.classList.toggle('open', !isOpen);
+    btn.setAttribute('aria-expanded', String(!isOpen));
+  }
+
+  /* ══════════════ CORAZONES CAYENDO ══════════════ */
+  const heartsContainer = document.getElementById('hearts');
+  const heartSymbols = ['♥','❤','💗','💕','💓','💖','💝','🩷'];
+
+  function createHeart() {
+    const h = document.createElement('div');
+    h.className = 'heart';
+    h.textContent = heartSymbols[Math.floor(Math.random() * heartSymbols.length)];
+    const colors = ['#ff4d8f','#ff1f6d','#ffa0c8','#ffd700','#ff88bb','#fff'];
+    h.style.left = Math.random() * 100 + 'vw';
+    h.style.fontSize = (0.9 + Math.random() * 1.8) + 'rem';
+    h.style.color = colors[Math.floor(Math.random() * colors.length)];
+    h.style.animationDuration = (5 + Math.random() * 9) + 's';
+    h.style.animationDelay = (Math.random() * 6) + 's';
+    h.style.filter = 'drop-shadow(0 0 4px currentColor)';
+    heartsContainer.appendChild(h);
+    setTimeout(() => h.remove(), 18000);
+  }
+
+  setInterval(createHeart, 600);
+  for (let i = 0; i < 12; i++) setTimeout(createHeart, i * 200);
+
+  /* ══════════════ BRILLOS FLOTANTES ══════════════ */
+  function createSparkle() {
+    const s = document.createElement('div');
+    s.className = 'sparkle';
+    const size = 3 + Math.random() * 6;
+    const colors = ['#fff','#ffd700','#ff4d8f','#ffe0f0','#ffaacc'];
+    s.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}vw;
+      top:${Math.random()*100}vh;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      box-shadow: 0 0 ${size*2}px ${size}px currentColor;
+      animation-duration:${2+Math.random()*4}s;
+      animation-delay:${Math.random()*4}s;
+    `;
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 8000);
+  }
+
+  setInterval(createSparkle, 300);
+  for (let i = 0; i < 20; i++) setTimeout(createSparkle, i * 100);
+
+  /* ══════════════ CANVAS — AURORA / PARTÍCULAS ══════════════ */
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  class Particle {
+    constructor() { this.reset(); }
+    reset() {
+      this.x = Math.random() * W;
+      this.y = Math.random() * H;
+      this.r = 1 + Math.random() * 2;
+      this.vx = (Math.random() - 0.5) * 0.3;
+      this.vy = (Math.random() - 0.5) * 0.3;
+      this.alpha = 0.1 + Math.random() * 0.5;
+      const hues = [330, 340, 350, 360, 45];
+      this.hue = hues[Math.floor(Math.random() * hues.length)];
+    }
+    update() {
+      this.x += this.vx; this.y += this.vy;
+      if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${this.hue},100%,70%,${this.alpha})`;
+      ctx.fill();
+    }
+  }
+
+  for (let i = 0; i < 80; i++) particles.push(new Particle());
+
+  let t = 0;
+  function loop() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Aurora suave en el fondo
+    const g1 = ctx.createRadialGradient(W*0.2, H*0.4, 0, W*0.2, H*0.4, W*0.5);
+    g1.addColorStop(0, `hsla(330,80%,25%,${0.04 + 0.02*Math.sin(t*0.4)})`);
+    g1.addColorStop(1, 'transparent');
+    ctx.fillStyle = g1; ctx.fillRect(0,0,W,H);
+
+    const g2 = ctx.createRadialGradient(W*0.8, H*0.6, 0, W*0.8, H*0.6, W*0.5);
+    g2.addColorStop(0, `hsla(300,70%,20%,${0.04 + 0.02*Math.sin(t*0.3+1)})`);
+    g2.addColorStop(1, 'transparent');
+    ctx.fillStyle = g2; ctx.fillRect(0,0,W,H);
+
+    particles.forEach(p => { p.update(); p.draw(); });
+    t += 0.01;
+    requestAnimationFrame(loop);
+  }
+  loop();
+</script>
+</body>
+</html>

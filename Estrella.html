@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mi Nova</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Cinzel:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --sky-deep: #020810;
+      --sky-mid: #071428;
+      --glow-blue: #7ec8e3;
+      --glow-soft: rgba(126,200,227,0.5);
+      --star-core: #ffffff;
+      --star-halo: rgba(160,220,255,0.85);
+      --line-color: rgba(160,210,255,0.3);
+      --msg-bg: rgba(8,20,55,0.96);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(ellipse at 42% 30%, #0d1e3a 0%, #050d1a 55%, var(--sky-deep) 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cormorant Garamond', serif;
+      overflow: hidden;
+      cursor: default;
+    }
+
+    /* ── Starfield background ── */
+    #bg-stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Nebula glow ── */
+    .nebula {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background:
+        radial-gradient(ellipse 65% 55% at 50% 48%, rgba(30,80,180,0.10) 0%, transparent 70%),
+        radial-gradient(ellipse 30% 25% at 70% 25%, rgba(80,140,220,0.07) 0%, transparent 60%);
+    }
+
+    /* ── Layout ── */
+    .wrapper {
+      position: relative;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ── Title ── */
+    .title-block { text-align: center; }
+
+    .title-block h1 {
+      font-family: 'Cinzel', serif;
+      font-weight: 300;
+      font-size: clamp(1.4rem, 5vw, 2.4rem);
+      letter-spacing: 0.4em;
+      color: var(--glow-blue);
+      text-shadow: 0 0 28px var(--glow-soft), 0 0 60px rgba(80,160,255,0.3);
+      animation: fadeDown 1.2s ease both;
+    }
+
+    .title-block p {
+      font-size: clamp(0.7rem, 2vw, 0.82rem);
+      color: rgba(180,210,240,0.45);
+      letter-spacing: 0.25em;
+      margin-top: 6px;
+      font-weight: 300;
+      animation: fadeDown 1.4s ease both;
+    }
+
+    /* ── Constellation canvas ── */
+    .constellation-wrap {
+      position: relative;
+      width: min(500px, 90vw);
+      height: min(500px, 90vw);
+      animation: fadeIn 1.6s ease both;
+    }
+
+    #const-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .const-line {
+      stroke: var(--line-color);
+      stroke-width: 0.8;
+      filter: url(#lineGlow);
+      transition: stroke 0.4s;
+    }
+
+    /* ── Stars ── */
+    .star-btn {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .star-btn:focus { outline: none; }
+
+    .star-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Ambient halo */
+    .star-halo {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(100,180,255,0.08) 0%, transparent 70%);
+      transition: background 0.4s, transform 0.3s;
+      pointer-events: none;
+    }
+
+    /* Crosshair rays */
+    .ray {
+      position: absolute;
+      height: 1.5px;
+      background: linear-gradient(90deg, transparent, rgba(220,240,255,0.85), transparent);
+      border-radius: 2px;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    /* Star core dot */
+    .star-core {
+      border-radius: 50%;
+      background: radial-gradient(circle, #fff 0%, #c8e8ff 50%, #80c4ff 100%);
+      position: relative;
+      z-index: 2;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s;
+    }
+
+    .star-btn:hover .star-core {
+      transform: scale(1.4);
+    }
+
+    .star-btn.visited .star-core {
+      background: radial-gradient(circle, #fff 0%, #a0e8ff 45%, #40b0ff 100%);
+    }
+
+    .star-btn.visited .star-halo {
+      background: radial-gradient(circle, rgba(160,230,255,0.18) 0%, transparent 70%);
+    }
+
+    .star-btn.active .star-core {
+      animation: starPulse 0.8s ease-in-out infinite alternate;
+    }
+
+    /* ── Message card ── */
+    #message-card {
+      position: fixed;
+      bottom: clamp(24px, 7vh, 70px);
+      left: 50%;
+      transform: translateX(-50%) translateY(24px);
+      opacity: 0;
+      transition: opacity 0.5s cubic-bezier(0.34,1.4,0.64,1), transform 0.5s cubic-bezier(0.34,1.4,0.64,1);
+      pointer-events: none;
+      z-index: 100;
+      text-align: center;
+      width: min(420px, 86vw);
+    }
+
+    #message-card.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .card-inner {
+      background: var(--msg-bg);
+      border: 1px solid rgba(120,200,255,0.28);
+      border-radius: 18px;
+      padding: 22px 28px;
+      box-shadow:
+        0 8px 40px rgba(0,0,0,0.7),
+        0 0 30px rgba(70,150,255,0.12),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+      backdrop-filter: blur(14px);
+    }
+
+    .card-emoji {
+      font-size: 1.9rem;
+      margin-bottom: 10px;
+      display: block;
+      animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+
+    .card-text {
+      color: #c8e8ff;
+      font-size: clamp(1rem, 2.8vw, 1.2rem);
+      font-weight: 300;
+      font-style: italic;
+      line-height: 1.5;
+      letter-spacing: 0.03em;
+      text-shadow: 0 0 18px rgba(160,210,255,0.4);
+    }
+
+    /* ── Progress dots ── */
+    .progress {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      animation: fadeIn 2s ease both;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(100,150,200,0.22);
+      transition: background 0.5s ease, box-shadow 0.5s ease;
+    }
+
+    .dot.lit {
+      background: rgba(160,220,255,0.9);
+      box-shadow: 0 0 8px rgba(160,220,255,0.7);
+    }
+
+    /* ── Complete message ── */
+    #complete-msg {
+      font-size: 0.78rem;
+      letter-spacing: 0.18em;
+      color: rgba(160,220,255,0.65);
+      height: 20px;
+      opacity: 0;
+      transition: opacity 1s ease;
+      font-family: 'Cinzel', serif;
+      font-weight: 300;
+    }
+
+    #complete-msg.visible { opacity: 1; }
+
+    /* ── Keyframes ── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+    @keyframes starPulse {
+      from { transform: scale(1);   box-shadow: 0 0 8px rgba(160,230,255,0.8); }
+      to   { transform: scale(1.35); box-shadow: 0 0 20px rgba(160,230,255,1); }
+    }
+    @keyframes twinkle {
+      0%,100% { transform: scale(1); }
+      50%      { transform: scale(1.35); }
+    }
+    @keyframes popIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-stars"></canvas>
+<div class="nebula"></div>
+
+<div class="wrapper">
+  <div class="title-block">
+    <h1>✦ &nbsp;Mi Nova&nbsp; ✦</h1>
+    <p>Dale click a cada estrella</p>
+  </div>
+
+  <div class="constellation-wrap" id="constellation">
+    <svg id="const-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="lineGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="0.6" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="coreGlow" x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <!-- Lines drawn by JS -->
+    </svg>
+    <!-- Stars rendered by JS -->
+  </div>
+
+  <div class="progress" id="progress"></div>
+  <div id="complete-msg">✦ A tu lado he descubierto todas las estrellas y aun asi descubri que tu eres la que tiene el brillo mas hermoso✦</div>
+</div>
+
+<!-- Message popup -->
+<div id="message-card">
+  <div class="card-inner">
+    <span class="card-emoji" id="card-emoji">✨</span>
+    <p class="card-text" id="card-text">...</p>
+  </div>
+</div>
+
+<script>
+  // ── Background starfield ──────────────────────────────────────────────────
+  (function() {
+    const canvas = document.getElementById('bg-stars');
+    const ctx = canvas.getContext('2d');
+    let W, H, stars = [];
+
+    function resize() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+      buildStars();
+    }
+
+    function buildStars() {
+      stars = [];
+      const count = Math.floor((W * H) / 4000);
+      for (let i = 0; i < count; i++) {
+        stars.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          r: Math.random() * 1.1 + 0.2,
+          alpha: Math.random() * 0.6 + 0.15,
+          speed: Math.random() * 0.008 + 0.002,
+          offset: Math.random() * Math.PI * 2,
+        });
+      }
+    }
+
+    let t = 0;
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      t += 0.01;
+      stars.forEach(s => {
+        const a = s.alpha * (0.7 + 0.3 * Math.sin(t * s.speed * 60 + s.offset));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200,225,255,${a})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    draw();
+  })();
+
+  // ── Constellation data ────────────────────────────────────────────────────
+  const STARS = [
+    { id: 0, x: 35, y: 12, size: 'large' },
+    { id: 1, x: 66, y: 17, size: 'large' },
+    { id: 2, x: 43, y: 34, size: 'medium' },
+    { id: 3, x: 37, y: 46, size: 'medium' },
+    { id: 4, x: 29, y: 61, size: 'medium' },
+    { id: 5, x: 69, y: 54, size: 'large' },
+    { id: 6, x: 57, y: 78, size: 'medium' },
+  ];
+
+  const LINES = [[0,1],[0,2],[2,3],[3,4],[1,5],[5,6]];
+
+  const MESSAGES = [
+    { text: 'Tu forma de cuidarme y demostrarme que todo estara bien mientras estemos juntos',                emoji: '🌿' },
+    { text: 'Tu manera de ver lo bueno en todo y seguir con esperanza sin importar el que',             emoji: '✨' },
+    { text: 'Tu inteligencia cuando resuelves problemas y cuando me ayudas y me inspiras a estudiar',    emoji: '💡' },
+    { text: 'Tu forma de hacerme sentir en casa y darme un hogar y un pecho al cual llegar cuando no me encuentro bien',            emoji: '🏡' },
+    { text: 'Tu sonrisa que me alegra los dias y que por mucho que intento no me puedo resistir a reir contigo',          emoji: '🌟' },
+    { text: 'Tu valentía para seguir adelante a pesar de todo y demostarme que no importa que tan dañados estemos se puede cambiar',              emoji: '🔥' },
+    { text: 'Tu corazón tan lindo que siempre me demuestra que tiene y tendra un lugar para mi',emoji: '❤️' },
+  ];
+
+  const SIZE = { large: { outer: 26, inner: 10 }, medium: { outer: 18, inner: 7 } };
+
+  // ── Build constellation ───────────────────────────────────────────────────
+  const wrap   = document.getElementById('constellation');
+  const svg    = document.getElementById('const-svg');
+  const prog   = document.getElementById('progress');
+  const card   = document.getElementById('message-card');
+  const cardEmoji = document.getElementById('card-emoji');
+  const cardText  = document.getElementById('card-text');
+  const completeMsg = document.getElementById('complete-msg');
+
+  // Get pixel position from percentage (relative to wrap)
+  function pct(star) {
+    const r = wrap.getBoundingClientRect();
+    return { px: star.x / 100 * r.width, py: star.y / 100 * r.height };
+  }
+
+  // Draw SVG lines
+  LINES.forEach(([a, b]) => {
+    const sa = STARS[a], sb = STARS[b];
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', sa.x); line.setAttribute('y1', sa.y);
+    line.setAttribute('x2', sb.x); line.setAttribute('y2', sb.y);
+    line.classList.add('const-line');
+    svg.appendChild(line);
+  });
+
+  const starEls = [];
+  const visited = new Set();
+  let hideTimer = null;
+
+  STARS.forEach((star, idx) => {
+    const { outer, inner } = SIZE[star.size];
+
+    const btn = document.createElement('button');
+    btn.className = 'star-btn';
+    btn.style.left = star.x + '%';
+    btn.style.top  = star.y + '%';
+    btn.setAttribute('aria-label', `Estrella ${idx + 1}`);
+
+    const swrap = document.createElement('div');
+    swrap.className = 'star-wrap';
+    swrap.style.width  = outer + 'px';
+    swrap.style.height = outer + 'px';
+
+    // Halo
+    const halo = document.createElement('div');
+    halo.className = 'star-halo';
+    halo.style.width  = (outer * 2.8) + 'px';
+    halo.style.height = (outer * 2.8) + 'px';
+
+    // Rays
+    [0, 90, 45, 135].forEach((deg, ri) => {
+      const ray = document.createElement('div');
+      ray.className = 'ray';
+      ray.style.width   = (outer * (ri < 2 ? 1.7 : 1.1)) + 'px';
+      ray.style.opacity = ri < 2 ? '0.75' : '0.35';
+      ray.style.transform = `rotate(${deg}deg)`;
+      swrap.appendChild(ray);
+    });
+
+    // Core
+    const core = document.createElement('div');
+    core.className = 'star-core';
+    core.style.width  = inner + 'px';
+    core.style.height = inner + 'px';
+    core.style.boxShadow = `0 0 ${inner}px rgba(200,230,255,0.8), 0 0 ${inner*2}px rgba(120,190,255,0.4)`;
+
+    swrap.appendChild(halo);
+    swrap.appendChild(core);
+    btn.appendChild(swrap);
+    wrap.appendChild(btn);
+    starEls.push({ btn, core, halo });
+
+    // Progress dot
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+    dot.id = `dot-${idx}`;
+    prog.appendChild(dot);
+
+    // Click
+    btn.addEventListener('click', () => handleClick(idx));
+  });
+
+  // Random twinkle
+  setInterval(() => {
+    const idx = Math.floor(Math.random() * STARS.length);
+    const core = starEls[idx].core;
+    core.style.animation = 'twinkle 0.6s ease';
+    setTimeout(() => { core.style.animation = ''; }, 650);
+  }, 1300);
+
+  // ── Handle click ──────────────────────────────────────────────────────────
+  function handleClick(idx) {
+    // Mark visited
+    visited.add(idx);
+    const { btn, core, halo } = starEls[idx];
+    btn.classList.add('visited');
+    core.style.boxShadow = `0 0 12px rgba(160,230,255,0.9), 0 0 28px rgba(100,180,255,0.6)`;
+
+    // Dot
+    document.getElementById(`dot-${idx}`).classList.add('lit');
+
+    // Show message
+    const msg = MESSAGES[idx];
+    cardEmoji.textContent = msg.emoji;
+    cardEmoji.style.animation = 'none';
+    requestAnimationFrame(() => { cardEmoji.style.animation = ''; });
+    cardText.textContent = msg.text;
+
+    // Active pulse
+    starEls.forEach(s => s.btn.classList.remove('active'));
+    btn.classList.add('active');
+
+    card.classList.add('visible');
+
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      card.classList.remove('visible');
+      btn.classList.remove('active');
+    }, 3600);
+
+    // All discovered?
+    if (visited.size === STARS.length) {
+      setTimeout(() => completeMsg.classList.add('visible'), 500);
+    }
+  }
+</script>
+</body>
+</html>

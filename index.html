@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✦ Nuestra historia ✦</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0d0410;display:flex;align-items:center;justify-content:center;min-height:100vh;overflow:hidden}
+
+  /* START SCREEN */
+  #startScreen{
+    position:fixed;inset:0;z-index:100;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.8rem;padding:2rem;
+    background: radial-gradient(ellipse at 50% 40%, #2a0820 0%, #0d0410 70%);
+  }
+  #startScreen h1{
+    font-family:'Press Start 2P',monospace;
+    font-size:clamp(0.9rem,2.5vw,1.8rem);
+    color:#ff4d8f;
+    text-shadow:0 0 20px #ff4d8f99, 0 0 60px #ff4d8f44, 0 0 100px #ff4d8f22;
+    letter-spacing:0.15em;text-align:center;line-height:2;
+  }
+  #startScreen p{color:#b06088;font-size:clamp(0.38rem,0.9vw,0.55rem);letter-spacing:0.15em;text-align:center;line-height:2.4}
+  #startBtn{
+    padding:1rem 2.5rem;background:transparent;
+    border:2px solid #ff4d8f;color:#ff4d8f;
+    font-family:'Press Start 2P',monospace;font-size:0.7rem;cursor:pointer;
+    letter-spacing:0.15em;animation:blink 1.2s step-end infinite;transition:background 0.2s;
+  }
+  #startBtn:hover{background:#ff4d8f22;animation:none}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+
+  /* CANVAS */
+  #bgCanvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+  #gameCanvas{display:block;position:relative;z-index:1;image-rendering:pixelated;image-rendering:crisp-edges}
+
+  /* HUD */
+  #hud{position:fixed;top:0.8rem;left:1rem;right:1rem;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:50}
+  .hud-txt{font-family:'Press Start 2P',monospace;font-size:clamp(0.35rem,0.8vw,0.5rem);color:#ff4d8f77;letter-spacing:0.08em}
+
+  /* HINT */
+  #doorHint{
+    position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);
+    font-family:'Press Start 2P',monospace;font-size:clamp(0.4rem,1vw,0.55rem);
+    color:#ffd700;letter-spacing:0.1em;
+    background:#00000088;padding:0.7rem 1.4rem;
+    border:1px solid #ffd70055;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;
+  }
+
+  /* MUSIC BTN */
+  #musicBtn{
+    position:fixed;bottom:1rem;right:1rem;background:#0d041099;
+    border:1px solid #ff4d8f44;color:#ff4d8f88;
+    font-family:'Press Start 2P',monospace;font-size:0.4rem;
+    padding:0.5rem 0.8rem;cursor:pointer;letter-spacing:0.1em;z-index:60;transition:all 0.2s;
+  }
+  #musicBtn:hover{background:#ff4d8f22;color:#ff4d8f}
+
+  /* OVERLAYS */
+  .scanlines{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,#00000012 3px,#00000012 4px);pointer-events:none;z-index:200;opacity:0.4}
+  .vignette{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 60%,transparent 30%,#0d041099 100%);pointer-events:none;z-index:199}
+</style>
+</head>
+<body>
+
+<!-- ROMANTIC BACKGROUND CANVAS -->
+<canvas id="bgCanvas"></canvas>
+
+<!-- START SCREEN -->
+<div id="startScreen">
+  <div style="font-size:3rem;animation:heartbeat 1.4s ease-in-out infinite;display:inline-block">💖</div>
+  <h1>Nuestra historia juntos</h1>
+  <p>← → &nbsp; MOVERSE &nbsp;|&nbsp; E &nbsp; ABRIR PUERTA</p>
+  <p style="color:#6a3050;font-size:0.42rem;letter-spacing:0.08em">7 PUERTAS ESPERAN SER ABIERTAS ♥</p>
+  <button id="startBtn">♥ INICIAR JUEGO ♥</button>
+</div>
+
+<!-- HUD -->
+<div id="hud" style="display:none">
+  <span class="hud-txt" id="posHud">▸ 0m</span>
+  <span class="hud-txt" style="color:#ff4d8f55">♥ EL PASILLO ♥</span>
+  <span class="hud-txt" id="doorHud">ABIERTAS: 0/7</span>
+</div>
+
+<div id="doorHint">[ E ] ABRIR PUERTA</div>
+<button id="musicBtn">♪ ON</button>
+<canvas id="gameCanvas"></canvas>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<audio id="bgMusic" loop>
+  <source src="Susurros.mp3" type="audio/mpeg">
+</audio>
+
+<style>
+@keyframes heartbeat{
+  0%,100%{transform:scale(1)}
+  14%{transform:scale(1.25)}
+  28%{transform:scale(1)}
+  42%{transform:scale(1.18)}
+  70%{transform:scale(1)}
+}
+</style>
+
+<script>
+// ─── BACKGROUND ROMANTIC CANVAS ───────────────────────────────────────────────
+const bgCanvas = document.getElementById('bgCanvas');
+const bgCtx = bgCanvas.getContext('2d');
+
+function resizeBg() {
+  bgCanvas.width = window.innerWidth;
+  bgCanvas.height = window.innerHeight;
+}
+resizeBg();
+window.addEventListener('resize', resizeBg);
+
+// Particles: hearts, sparkles, petals
+const BG_PARTICLES = [];
+
+function createParticle() {
+  const types = ['heart','heart','heart','sparkle','sparkle','petal','glow'];
+  const type = types[Math.floor(Math.random()*types.length)];
+  return {
+    type,
+    x: Math.random() * bgCanvas.width,
+    y: -30 - Math.random() * 200,
+    size: type === 'heart' ? 8 + Math.random()*18 :
+          type === 'sparkle' ? 2 + Math.random()*5 :
+          type === 'petal' ? 5 + Math.random()*12 : 40 + Math.random()*80,
+    speed: 0.4 + Math.random() * 1.2,
+    drift: (Math.random()-0.5)*0.6,
+    rotation: Math.random()*Math.PI*2,
+    rotSpeed: (Math.random()-0.5)*0.04,
+    alpha: 0.3 + Math.random()*0.7,
+    alphaDelta: 0,
+    hue: type==='heart' ? (Math.random()<0.7 ? 340+Math.random()*30 : 300+Math.random()*20) :
+         type==='sparkle' ? 30+Math.random()*60 :
+         type==='petal' ? 320+Math.random()*40 : 320+Math.random()*40,
+    twinkleSpeed: 0.02+Math.random()*0.06,
+    twinklePhase: Math.random()*Math.PI*2,
+    life: 0,
+    maxLife: 300 + Math.random()*400,
+  };
+}
+
+// Init particles
+for(let i=0;i<80;i++) {
+  const p = createParticle();
+  p.y = Math.random()*bgCanvas.height; // spread initial positions
+  p.life = Math.random()*p.maxLife;
+  BG_PARTICLES.push(p);
+}
+
+function drawHeart(ctx, x, y, size, rotation, alpha, hue) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rotation);
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = `hsl(${hue},90%,65%)`;
+  ctx.shadowColor = `hsl(${hue},90%,70%)`;
+  ctx.shadowBlur = size*1.5;
+  ctx.beginPath();
+  const s = size*0.055;
+  ctx.moveTo(0, s*3);
+  ctx.bezierCurveTo(s*5, -s*2, s*10, s*1, 0, s*8);
+  ctx.bezierCurveTo(-s*10, s*1, -s*5, -s*2, 0, s*3);
+  ctx.closePath();
+  ctx.fill();
+  // Inner glow
+  ctx.globalAlpha = alpha*0.4;
+  ctx.fillStyle = `hsl(${hue},100%,85%)`;
+  ctx.shadowBlur = 0;
+  ctx.scale(0.5,0.5);
+  ctx.beginPath();
+  ctx.moveTo(0, s*3);
+  ctx.bezierCurveTo(s*5, -s*2, s*10, s*1, 0, s*8);
+  ctx.bezierCurveTo(-s*10, s*1, -s*5, -s*2, 0, s*3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawSparkle(ctx, x, y, size, rotation, alpha, hue) {
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(rotation);
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = `hsl(${hue},100%,80%)`;
+  ctx.shadowColor = `hsl(${hue},100%,90%)`;
+  ctx.shadowBlur = size*3;
+  ctx.lineWidth = size*0.4;
+  ctx.lineCap = 'round';
+  for(let a=0;a<4;a++) {
+    ctx.save();
+    ctx.rotate(a*Math.PI/4);
+    ctx.beginPath(); ctx.moveTo(0,-size*2.5); ctx.lineTo(0,size*2.5); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.fillStyle = `hsl(${hue},100%,95%)`;
+  ctx.globalAlpha = alpha*0.9;
+  ctx.beginPath(); ctx.arc(0,0,size*0.6,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawPetal(ctx, x, y, size, rotation, alpha, hue) {
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(rotation);
+  ctx.globalAlpha = alpha*0.7;
+  const grad = ctx.createRadialGradient(0,0,0,0,0,size);
+  grad.addColorStop(0,`hsl(${hue},80%,80%)`);
+  grad.addColorStop(1,`hsla(${hue},60%,60%,0)`);
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.ellipse(0,0,size*0.4,size,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawGlow(ctx, x, y, size, alpha, hue) {
+  ctx.save();
+  ctx.globalAlpha = alpha*0.08;
+  const g = ctx.createRadialGradient(x,y,0,x,y,size);
+  g.addColorStop(0,`hsl(${hue},80%,70%)`);
+  g.addColorStop(1,'transparent');
+  ctx.fillStyle=g;
+  ctx.beginPath(); ctx.arc(x,y,size,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+// Floating orbs in bg
+const ORBS = Array.from({length:6},(_,i)=>{
+  const hues=[340,320,300,350,330,310];
+  return {
+    x:Math.random()*window.innerWidth,
+    y:Math.random()*window.innerHeight,
+    r:100+Math.random()*200,
+    hue:hues[i],
+    phase:Math.random()*Math.PI*2,
+    speed:0.002+Math.random()*0.003,
+    ox:Math.random()*60-30,
+    oy:Math.random()*60-30,
+  };
+});
+
+let bgFrame=0;
+function animateBg() {
+  const W=bgCanvas.width, H=bgCanvas.height;
+  bgCtx.clearRect(0,0,W,H);
+
+  // Dark romantic gradient bg
+  const bg=bgCtx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#0d0410');
+  bg.addColorStop(0.35,'#1a0618');
+  bg.addColorStop(0.7,'#12031a');
+  bg.addColorStop(1,'#08020e');
+  bgCtx.fillStyle=bg;
+  bgCtx.fillRect(0,0,W,H);
+
+  // Floating ambient orbs
+  bgFrame+=1;
+  ORBS.forEach(orb=>{
+    orb.phase+=orb.speed;
+    const cx=orb.x+Math.sin(orb.phase)*orb.ox;
+    const cy=orb.y+Math.cos(orb.phase*0.7)*orb.oy;
+    const g=bgCtx.createRadialGradient(cx,cy,0,cx,cy,orb.r);
+    g.addColorStop(0,`hsla(${orb.hue},70%,40%,0.12)`);
+    g.addColorStop(0.5,`hsla(${orb.hue},60%,30%,0.06)`);
+    g.addColorStop(1,'transparent');
+    bgCtx.fillStyle=g;
+    bgCtx.beginPath();bgCtx.arc(cx,cy,orb.r,0,Math.PI*2);bgCtx.fill();
+  });
+
+  // Subtle grid/pattern overlay
+  bgCtx.save();
+  bgCtx.globalAlpha=0.025;
+  bgCtx.strokeStyle='#ff69b4';
+  bgCtx.lineWidth=0.5;
+  const gs=80;
+  for(let x=0;x<W;x+=gs){ bgCtx.beginPath();bgCtx.moveTo(x,0);bgCtx.lineTo(x,H);bgCtx.stroke(); }
+  for(let y=0;y<H;y+=gs){ bgCtx.beginPath();bgCtx.moveTo(0,y);bgCtx.lineTo(W,y);bgCtx.stroke(); }
+  bgCtx.restore();
+
+  // Update & draw particles
+  for(let i=BG_PARTICLES.length-1;i>=0;i--) {
+    const p=BG_PARTICLES[i];
+    p.y+=p.speed;
+    p.x+=p.drift+Math.sin(p.life*0.02+p.twinklePhase)*0.4;
+    p.rotation+=p.rotSpeed;
+    p.life++;
+    p.twinklePhase+=p.twinkleSpeed;
+    // Fade in/out
+    const lifeRatio=p.life/p.maxLife;
+    const fade=lifeRatio<0.1?lifeRatio/0.1:lifeRatio>0.85?(1-lifeRatio)/0.15:1;
+    const curAlpha=p.alpha*fade;
+
+    if(p.type==='heart')      drawHeart(bgCtx,p.x,p.y,p.size,p.rotation,curAlpha,p.hue);
+    else if(p.type==='sparkle') {
+      const twinkle=(Math.sin(p.twinklePhase)+1)/2;
+      drawSparkle(bgCtx,p.x,p.y,p.size,p.rotation,curAlpha*twinkle,p.hue);
+    }
+    else if(p.type==='petal')  drawPetal(bgCtx,p.x,p.y,p.size,p.rotation,curAlpha,p.hue);
+    else                        drawGlow(bgCtx,p.x,p.y,p.size,curAlpha,p.hue);
+
+    if(p.life>=p.maxLife || p.y>H+50) {
+      BG_PARTICLES[i]=createParticle();
+    }
+  }
+
+  // Vignette overlay for romance depth
+  const vig=bgCtx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.75);
+  vig.addColorStop(0,'transparent');
+  vig.addColorStop(1,'rgba(5,1,10,0.55)');
+  bgCtx.fillStyle=vig;
+  bgCtx.fillRect(0,0,W,H);
+
+  requestAnimationFrame(animateBg);
+}
+animateBg();
+
+// ─── GAME ────────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const music = document.getElementById('bgMusic');
+let musicOn = true;
+let gameStarted = false;
+
+const doorPages = [
+  "playlist.html",
+  "carta.html",
+  "fotos.html",
+  "amor.html",
+  "Estrella.html",
+  "cofre.html",
+  "libro.html",
+  "cine.html"
+];
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+const charImg = new Image();
+charImg.src = "a4_clean.png";
+const CORRIDOR_LENGTH = 8000;
+const DOOR_COUNT = 8;
+const DOOR_SPACING = CORRIDOR_LENGTH / (DOOR_COUNT + 1);
+
+const player = {
+  worldX: 200,
+  facing: 1,
+  bobTime: 0,
+  bobOffset: 0,
+  speed: 5,
+};
+
+const doors = Array.from({length: DOOR_COUNT}, (_, i) => ({
+  worldX: DOOR_SPACING * (i + 1),
+  width: 72,
+  height: 128,
+  open: false,
+  openAnim: 0,
+  index: i,
+  label: `PUERTA ${i + 1}`
+}));
+
+const keys = {};
+document.addEventListener('keydown', e => { keys[e.key] = true; });
+document.addEventListener('keyup', e => { keys[e.key] = false; });
+let nearDoor = null;
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('hud').style.display = 'flex';
+  gameStarted = true;
+  music.volume = 0.65;
+  music.play().catch(() => {});
+});
+
+document.getElementById('musicBtn').addEventListener('click', () => {
+  musicOn = !musicOn;
+  if(musicOn) { music.play(); document.getElementById('musicBtn').textContent = '♪ ON'; }
+  else { music.pause(); document.getElementById('musicBtn').textContent = '♪ OFF'; }
+});
+
+document.addEventListener('keydown', e => {
+  if((e.key === 'e' || e.key === 'E') && gameStarted && nearDoor !== null) {
+    const door = doors[nearDoor];
+    door.open = true;
+    door.openAnim = 0;
+    setTimeout(() => window.open(doorPages[door.index], '_blank'), 350);
+  }
+});
+
+// ─── CORRIDOR ────────────────────────────────────────────────────────────────
+function drawCorridor() {
+  const W=canvas.width, H=canvas.height;
+  const HZ=H*0.43;
+  const VPX=W/2;
+  const camOff=player.worldX*0.8;
+
+  // Romantic corridor ceiling
+  const cg=ctx.createLinearGradient(0,0,0,HZ);
+  cg.addColorStop(0,'rgba(8,1,14,0)');
+  cg.addColorStop(1,'rgba(30,5,30,0)');
+  ctx.fillStyle=cg; ctx.fillRect(0,0,W,HZ);
+
+  // Floor
+  const fg=ctx.createLinearGradient(0,HZ,0,H);
+  fg.addColorStop(0,'rgba(28,5,35,0.92)');
+  fg.addColorStop(1,'rgba(8,1,14,0.95)');
+  ctx.fillStyle=fg; ctx.fillRect(0,HZ,W,H-HZ);
+
+  // Perspective grid - romantic pink/rose
+  ctx.lineWidth=1;
+  // Floor verticals
+  for(let i=-30;i<=30;i++) {
+    const bx=VPX+i*100-(camOff%100);
+    ctx.beginPath(); ctx.moveTo(VPX,HZ); ctx.lineTo(bx,H);
+    ctx.strokeStyle='rgba(255,80,140,0.07)'; ctx.stroke();
+  }
+  // Floor horizontals
+  for(let r=1;r<=14;r++) {
+    const t=r/14, y=HZ+(H-HZ)*t*t;
+    const xs=W*0.5+W*t*1.2;
+    ctx.beginPath(); ctx.moveTo(VPX-xs,y); ctx.lineTo(VPX+xs,y);
+    ctx.strokeStyle='rgba(255,80,140,0.07)'; ctx.stroke();
+  }
+  // Ceiling grid
+  for(let i=-30;i<=30;i++) {
+    const bx=VPX+i*100-(camOff%100);
+    ctx.beginPath(); ctx.moveTo(VPX,HZ); ctx.lineTo(bx,0);
+    ctx.strokeStyle='rgba(200,60,180,0.04)'; ctx.stroke();
+  }
+  for(let r=1;r<=8;r++) {
+    const t=r/8, y=HZ-HZ*t*t;
+    const xs=W*0.5+W*t*1.2;
+    ctx.beginPath(); ctx.moveTo(VPX-xs,y); ctx.lineTo(VPX+xs,y);
+    ctx.strokeStyle='rgba(200,60,180,0.04)'; ctx.stroke();
+  }
+
+  // Horizon romantic glow
+  const hg=ctx.createRadialGradient(VPX,HZ,0,VPX,HZ,W*0.55);
+  hg.addColorStop(0,'rgba(200,30,120,0.15)');
+  hg.addColorStop(0.5,'rgba(140,20,100,0.07)');
+  hg.addColorStop(1,'transparent');
+  ctx.fillStyle=hg; ctx.fillRect(0,0,W,H);
+
+  // Side wall glows - rose
+  const sw1=ctx.createLinearGradient(0,0,W*0.14,0);
+  sw1.addColorStop(0,'rgba(220,50,120,0.1)'); sw1.addColorStop(1,'transparent');
+  ctx.fillStyle=sw1; ctx.fillRect(0,0,W*0.14,H);
+  const sw2=ctx.createLinearGradient(W,0,W*0.86,0);
+  sw2.addColorStop(0,'rgba(220,50,120,0.1)'); sw2.addColorStop(1,'transparent');
+  ctx.fillStyle=sw2; ctx.fillRect(W*0.86,0,W*0.14,H);
+
+  // Rose candles/torches along walls
+  const tSpacing=500, tOff=camOff%tSpacing;
+  for(let i=-2;i<Math.ceil(W/tSpacing)+3;i++) {
+    const tx=VPX+i*tSpacing-tOff+tSpacing;
+    drawRoseCandle(tx, HZ*0.25, W, HZ);
+    drawRoseCandle(tx, HZ*0.75, W, HZ);
+  }
+
+  // Floor glow strip at horizon
+  const horizLine=ctx.createLinearGradient(0,HZ-2,0,HZ+2);
+  horizLine.addColorStop(0,'transparent');
+  horizLine.addColorStop(0.5,'rgba(255,80,160,0.25)');
+  horizLine.addColorStop(1,'transparent');
+  ctx.fillStyle=horizLine;
+  ctx.fillRect(0,HZ-2,W,4);
+}
+
+function drawRoseCandle(x,y,W,HZ) {
+  const dist=Math.abs(x-W/2);
+  const s=Math.max(0.05,1-dist/(W*0.65));
+  if(s<0.05) return;
+  const t=Date.now()/220, flk=Math.sin(t+x*0.013)*0.3+0.7;
+  const r=Math.max(2,10*s);
+  // Warm rose glow
+  const g=ctx.createRadialGradient(x,y,0,x,y,r*8);
+  g.addColorStop(0,`rgba(255,120,180,${0.28*s*flk})`);
+  g.addColorStop(0.4,`rgba(200,60,130,${0.12*s*flk})`);
+  g.addColorStop(1,'transparent');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r*8,0,Math.PI*2); ctx.fill();
+  // Core flame
+  ctx.fillStyle=`rgba(255,200,230,${s*flk})`;
+  ctx.shadowColor='rgba(255,100,180,0.8)';
+  ctx.shadowBlur=r*4;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur=0;
+}
+
+// ─── DOORS ────────────────────────────────────────────────────────────────────
+function drawDoors() {
+  const W=canvas.width, H=canvas.height;
+  const HZ=H*0.43, VPX=W/2, PSX=W*0.4;
+
+  const sorted=[...doors].sort((a,b)=>
+    Math.abs(b.worldX-player.worldX)-Math.abs(a.worldX-player.worldX)
+  );
+
+  sorted.forEach(door => {
+    const relX=door.worldX-player.worldX;
+    const dist=Math.abs(relX);
+    if(dist>W*2.5) return;
+    const scale=Math.max(0.06,Math.min(1.3,W*0.35/Math.max(dist,70)));
+    const sx=PSX+relX*scale*0.75;
+    if(sx<-300||sx>W+300) return;
+    const dW=door.width*scale*2;
+    const dH=door.height*scale*2;
+    const dY=HZ+(H-HZ)*0.04;
+    const baseY=dY+dH/2;
+
+    if(door.open && door.openAnim<1) door.openAnim=Math.min(1,door.openAnim+0.04);
+    const skew=door.open?door.openAnim*0.88:0;
+
+    ctx.save();
+    ctx.translate(sx,baseY);
+
+    // Shadow
+    ctx.fillStyle=`rgba(0,0,0,${scale*0.6})`;
+    ctx.fillRect(-dW/2-8*scale+5,-dH/2-6*scale+5,dW+16*scale,dH+12*scale);
+
+    // Frame — romantic dark rose wood
+    const frameGrad=ctx.createLinearGradient(-dW/2,0,dW/2,0);
+    frameGrad.addColorStop(0,`rgba(80,20,40,${scale})`);
+    frameGrad.addColorStop(0.5,`rgba(160,60,90,${scale})`);
+    frameGrad.addColorStop(1,`rgba(80,20,40,${scale})`);
+    ctx.fillStyle=frameGrad;
+    ctx.fillRect(-dW/2-8*scale,-dH/2-6*scale,dW+16*scale,dH+12*scale);
+
+    // Frame inner
+    ctx.fillStyle=`rgba(8,2,14,${scale})`;
+    ctx.fillRect(-dW/2-2,-dH/2-2,dW+4,dH+4);
+
+    // Door panel
+    ctx.save();
+    ctx.transform(1-skew,0,0,1,0,0);
+    const dpGrad=ctx.createLinearGradient(-dW/2,0,dW/2,0);
+    dpGrad.addColorStop(0,`rgba(25,6,18,${scale})`);
+    dpGrad.addColorStop(0.4,`rgba(50,14,35,${scale})`);
+    dpGrad.addColorStop(1,`rgba(18,4,12,${scale})`);
+    ctx.fillStyle=dpGrad;
+    ctx.fillRect(-dW/2,-dH/2,dW,dH);
+
+    if(scale>0.25) {
+      ctx.strokeStyle=`rgba(180,60,100,${scale*0.5})`;
+      ctx.lineWidth=Math.max(0.5,2*scale);
+      const pad=dW*0.1;
+      ctx.strokeRect(-dW/2+pad,-dH/2+dH*0.07,dW-pad*2,dH*0.38);
+      ctx.strokeRect(-dW/2+pad,-dH/2+dH*0.52,dW-pad*2,dH*0.38);
+      // Heart on door instead of knob!
+      if(scale>0.3) {
+        ctx.save();
+        ctx.globalAlpha=scale*0.9;
+        const hs=Math.max(4,9*scale);
+        const hx=dW*0.28, hy=0;
+        ctx.fillStyle=`rgba(255,80,130,${scale})`;
+        ctx.shadowColor='rgba(255,80,130,0.8)';
+        ctx.shadowBlur=hs*3;
+        const s=hs*0.055;
+        ctx.beginPath();
+        ctx.moveTo(hx,hy+s*3);
+        ctx.bezierCurveTo(hx+s*5,hy-s*2,hx+s*10,hy+s*1,hx,hy+s*8);
+        ctx.bezierCurveTo(hx-s*10,hy+s*1,hx-s*5,hy-s*2,hx,hy+s*3);
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowBlur=0;
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+
+    // Door number
+    if(scale>0.45) {
+      ctx.font=`bold ${Math.max(7,12*scale)}px 'Press Start 2P',monospace`;
+      ctx.textAlign='center';
+      ctx.fillStyle=`rgba(255,160,200,${scale})`;
+      ctx.shadowColor='rgba(255,80,150,0.6)';
+      ctx.shadowBlur=8*scale;
+      ctx.fillText(door.index+1,0,-dH/2-10*scale);
+      ctx.shadowBlur=0;
+    }
+
+    // Near-door glow (romantic pulse)
+    if(nearDoor===door.index) {
+      const pulse=(Math.sin(Date.now()/300)+1)/2;
+      const ng=ctx.createRadialGradient(0,0,0,0,0,dW*1.3);
+      ng.addColorStop(0,`rgba(255,80,150,${0.1+pulse*0.08})`);
+      ng.addColorStop(1,'transparent');
+      ctx.fillStyle=ng;
+      ctx.beginPath(); ctx.arc(0,0,dW*1.3,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle=`rgba(255,120,180,${0.3+pulse*0.4})`;
+      ctx.lineWidth=2*scale;
+      ctx.strokeRect(-dW/2-10*scale,-dH/2-8*scale,dW+20*scale,dH+16*scale);
+    }
+
+    ctx.restore();
+  });
+}
+
+// ─── PLAYER ───────────────────────────────────────────────────────────────────
+function drawPlayer() {
+  if(!charImg.complete) return;
+  const W=canvas.width, H=canvas.height;
+  const HZ=H*0.43;
+  const charH=Math.min(H*0.38,180);
+  const charW=charH*(charImg.naturalWidth/charImg.naturalHeight);
+  const px=W*0.4;
+  const py=HZ+(H-HZ)*0.04-player.bobOffset;
+
+  // Soft romantic glow under player
+  const sg=ctx.createRadialGradient(px,py+charH*0.9,0,px,py+charH*0.9,charW*1.2);
+  sg.addColorStop(0,'rgba(255,80,150,0.12)');
+  sg.addColorStop(1,'transparent');
+  ctx.fillStyle=sg;
+  ctx.beginPath(); ctx.arc(px,py+charH*0.9,charW*1.2,0,Math.PI*2); ctx.fill();
+
+  // Shadow
+  ctx.save();
+  ctx.globalAlpha=0.3;
+  ctx.fillStyle='#000';
+  ctx.beginPath();
+  ctx.ellipse(px,py+charH+8,charW*0.38,10,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  if(player.facing===-1) {
+    ctx.translate(px,py); ctx.scale(-1,1);
+    ctx.drawImage(charImg,-charW/2,0,charW,charH);
+  } else {
+    ctx.drawImage(charImg,px-charW/2,py,charW,charH);
+  }
+  ctx.restore();
+}
+
+// ─── MINIMAP ──────────────────────────────────────────────────────────────────
+function drawMinimap() {
+  const W=canvas.width;
+  const mW=180,mH=22,mX=W/2-90,mY=10;
+  ctx.save();
+  ctx.globalAlpha=0.8;
+  ctx.fillStyle='rgba(20,4,28,0.9)';
+  ctx.strokeStyle='rgba(255,80,140,0.3)';
+  ctx.lineWidth=1;
+  ctx.fillRect(mX,mY,mW,mH);
+  ctx.strokeRect(mX,mY,mW,mH);
+  doors.forEach(d=>{
+    const dx=mX+(d.worldX/CORRIDOR_LENGTH)*mW;
+    ctx.fillStyle=d.open?'rgba(255,200,80,0.9)':'rgba(180,60,100,0.6)';
+    ctx.fillRect(dx-2,mY+3,4,mH-6);
+  });
+  const ppx=mX+(player.worldX/CORRIDOR_LENGTH)*mW;
+  ctx.fillStyle='#ff4d8f';
+  ctx.shadowColor='#ff4d8f';
+  ctx.shadowBlur=6;
+  ctx.fillRect(ppx-2,mY+mH/2-4,4,8);
+  ctx.shadowBlur=0;
+  ctx.restore();
+}
+
+// ─── LOOP ─────────────────────────────────────────────────────────────────────
+function update() {
+  if(!gameStarted) return;
+  const left=keys['ArrowLeft']||keys['a']||keys['A'];
+  const right=keys['ArrowRight']||keys['d']||keys['D'];
+  if(right){ player.worldX=Math.min(CORRIDOR_LENGTH-100,player.worldX+player.speed); player.facing=1; }
+  if(left) { player.worldX=Math.max(50,player.worldX-player.speed); player.facing=-1; }
+  if(left||right){ player.bobTime+=0.2; player.bobOffset=Math.abs(Math.sin(player.bobTime))*9; }
+  else { player.bobOffset*=0.85; }
+  nearDoor=null;
+  doors.forEach((d,i)=>{ if(Math.abs(d.worldX-player.worldX)<130) nearDoor=i; });
+  document.getElementById('posHud').textContent=`▸ ${Math.floor(player.worldX/70)}m`;
+  const hint=document.getElementById('doorHint');
+  if(nearDoor!==null){
+    hint.style.opacity='1';
+    hint.textContent=doors[nearDoor].open?`[ E ] ENTRAR ♥ ${doors[nearDoor].label}`:`[ E ] ABRIR ♥ ${doors[nearDoor].label}`;
+  } else { hint.style.opacity='0'; }
+  const opened=doors.filter(d=>d.open).length;
+  document.getElementById('doorHud').textContent=`♥ ${opened}/7`;
+}
+
+function render() {
+  if(!gameStarted) return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawCorridor();
+  drawDoors();
+  drawPlayer();
+  drawMinimap();
+}
+
+function loop() { update(); render(); requestAnimationFrame(loop); }
+loop();
+</script>
+</body>
+</html>

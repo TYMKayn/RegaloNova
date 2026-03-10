@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Razones para amarte</title>
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #0a0a0f;
+            background-image: 
+                radial-gradient(circle at 30% 40%, rgba(255, 70, 100, 0.15) 0%, transparent 30%),
+                radial-gradient(circle at 70% 60%, rgba(200, 50, 80, 0.12) 0%, transparent 35%),
+                radial-gradient(circle at 90% 20%, rgba(255, 120, 140, 0.1) 0%, transparent 25%);
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            box-sizing: border-box;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Efecto de estrellas/brillos parpadeantes */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 15px 60px, rgba(255, 200, 210, 0.9), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 75px 430px, #ffb6c1, rgba(0,0,0,0)),
+                radial-gradient(3px 3px at 280px 150px, #ff99aa, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 450px 700px, #ffa5b9, rgba(0,0,0,0)),
+                radial-gradient(3px 3px at 650px 320px, #ff8095, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 820px 550px, #ffb0c0, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 95px 890px, #ffc0cb, rgba(0,0,0,0)),
+                radial-gradient(3px 3px at 540px 920px, #ffa7b9, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 730px 250px, #ff99b0, rgba(0,0,0,0)),
+                radial-gradient(3px 3px at 890px 780px, #ff8da1, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 210px 480px, #ffa5bc, rgba(0,0,0,0)),
+                radial-gradient(3px 3px at 920px 130px, #ffb1c2, rgba(0,0,0,0));
+            background-repeat: repeat;
+            opacity: 0.5;
+            animation: parpadeo 4s infinite alternate;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes parpadeo {
+            0% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+            100% { opacity: 0.3; }
+        }
+
+        /* Animación de corazones cayendo */
+        .corazones-lluvia {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+            overflow: hidden;
+        }
+
+        .corazon-cayendo {
+            position: absolute;
+            color: #ff3b5c;
+            font-size: 1.2rem;
+            opacity: 0.7;
+            animation: caer linear infinite;
+            filter: drop-shadow(0 0 8px #ff6b8b);
+            user-select: none;
+        }
+
+        @keyframes caer {
+            0% {
+                transform: translateY(-10vh) rotate(0deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(110vh) rotate(360deg);
+                opacity: 0.2;
+            }
+        }
+
+        .contenedor {
+            max-width: 900px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            color: #ffd1dc;
+            font-weight: 400;
+            font-size: 2.5rem;
+            margin-bottom: 0.25rem;
+            letter-spacing: 2px;
+            text-shadow: 
+                0 0 15px #ff4d6d,
+                0 0 30px #ff3366,
+                2px 2px 4px rgba(0,0,0,0.8);
+            background: linear-gradient(135deg, #ffb6c1, #ff99aa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 600;
+        }
+
+        .subtitulo {
+            color: #ff99aa;
+            font-size: 1.2rem;
+            margin-bottom: 2.5rem;
+            font-style: italic;
+            border-bottom: 2px dashed #ff4d6d;
+            padding-bottom: 0.8rem;
+            display: inline-block;
+            text-shadow: 0 0 10px #ff99aa;
+            box-shadow: 0 4px 15px rgba(255, 77, 109, 0.3);
+            background: rgba(10, 10, 15, 0.6);
+            backdrop-filter: blur(2px);
+            padding-left: 2rem;
+            padding-right: 2rem;
+            border-radius: 40px;
+        }
+
+        .grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+            margin: 3rem 0;
+            position: relative;
+            z-index: 15;
+        }
+
+        .razon {
+            width: 230px;
+            height: 230px;
+            perspective: 1500px;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.3s ease, filter 0.3s ease;
+            filter: drop-shadow(0 0 15px rgba(255, 77, 109, 0.5));
+        }
+
+        .razon:hover {
+            transform: scale(1.05);
+            filter: drop-shadow(0 0 25px #ff4d6d);
+        }
+
+        .interior {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+            border-radius: 30px;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 77, 109, 0.4);
+        }
+
+        .frontal, .trasera {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1.2rem;
+            box-sizing: border-box;
+            border: 2px solid rgba(255, 107, 139, 0.6);
+        }
+
+        .frontal {
+            background: linear-gradient(145deg, #1a0f12, #2d1a20);
+            flex-direction: column;
+            gap: 0.8rem;
+            color: #ffb3c6;
+            border: 2px solid #ff4d6d;
+            box-shadow: inset 0 0 30px rgba(255, 77, 109, 0.3), 0 0 30px rgba(255, 77, 109, 0.3);
+        }
+
+        .frontal .numero {
+            font-size: 5rem;
+            font-weight: 800;
+            line-height: 1;
+            background: linear-gradient(135deg, #ff99aa, #ff4d6d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px #ff4d6d;
+            filter: drop-shadow(0 0 15px #ff3366);
+        }
+
+        .frontal .corazon {
+            font-size: 3.2rem;
+            animation: latido 1.8s infinite ease-in-out;
+            filter: drop-shadow(0 0 20px #ff4d6d);
+        }
+
+        @keyframes latido {
+            0% { transform: scale(1); text-shadow: 0 0 10px #ff4d6d; }
+            50% { transform: scale(1.2); text-shadow: 0 0 30px #ff3366, 0 0 50px #ff4d6d; }
+            100% { transform: scale(1); text-shadow: 0 0 10px #ff4d6d; }
+        }
+
+        .trasera {
+            background: linear-gradient(145deg, #2d1a20, #1f1217);
+            color: #ffe6eb;
+            font-size: 1.25rem;
+            font-weight: 500;
+            line-height: 1.5;
+            transform: rotateY(180deg);
+            border: 3px solid #ff4d6d;
+            box-shadow: inset 0 0 40px rgba(255, 77, 109, 0.4), 0 0 40px rgba(255, 77, 109, 0.4);
+            backdrop-filter: blur(5px);
+            word-break: break-word;
+            text-shadow: 0 2px 5px black;
+        }
+
+        .razon.girada .interior {
+            transform: rotateY(180deg);
+        }
+
+        .mensaje-final {
+            background: rgba(45, 26, 32, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 2.8rem;
+            border-radius: 80px;
+            font-size: 1.9rem;
+            font-weight: 500;
+            border: 3px solid #ff4d6d;
+            display: inline-block;
+            box-shadow: 0 0 40px #ff4d6d, inset 0 0 20px #ff99aa;
+            color: #ffd9e2;
+            text-shadow: 0 0 15px #ff99aa;
+            margin-top: 1rem;
+            animation: brillo 2s infinite alternate;
+        }
+
+        @keyframes brillo {
+            from { box-shadow: 0 0 30px #ff4d6d, inset 0 0 20px #ff99aa; }
+            to { box-shadow: 0 0 60px #ff3366, inset 0 0 30px #ffb6c1; }
+        }
+
+        .mensaje-final span {
+            font-size: 2.5rem;
+            margin: 0 0.8rem;
+            filter: drop-shadow(0 0 15px #ff4d6d);
+            animation: latido 1.5s infinite;
+            display: inline-block;
+        }
+
+        footer {
+            margin-top: 2.5rem;
+            color: #b37b8a;
+            font-size: 1rem;
+            font-weight: 300;
+            text-shadow: 0 0 10px #ff4d6d;
+            letter-spacing: 1px;
+            background: rgba(0,0,0,0.5);
+            padding: 0.5rem 1.5rem;
+            border-radius: 40px;
+            backdrop-filter: blur(2px);
+            border: 1px solid #ff99aa33;
+            z-index: 10;
+            position: relative;
+        }
+
+        @media (max-width: 550px) {
+            .razon {
+                width: 170px;
+                height: 170px;
+            }
+            .frontal .numero {
+                font-size: 3.5rem;
+            }
+            .trasera {
+                font-size: 1rem;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Lluvia de corazones generada con JS -->
+    <div class="corazones-lluvia" id="lluviaCorazones"></div>
+
+    <div class="contenedor">
+        <h1>✨ Razones por las que te amo ✨</h1>
+        <div class="subtitulo">toca cada estrella y descubre</div>
+
+        <div class="grid" id="grid-razones"></div>
+
+        <div class="mensaje-final" id="mensajeFinal" style="display: none;">
+            <span>💗</span>Vamos a tener infinitas noches para amarnos<span>💗</span>
+        </div>
+        <footer>Cada latido de mi corazon es por para ti mi Nova</footer>
+    </div>
+
+    <script>
+        (function() {
+            // ========== RAZONES (personalízalas aquí) ==========
+            const razones = [
+                "Amo cómo me haces reír cuando estoy mal.",
+                "Amo la forma en que me miras.",
+                "Amo que contigo todo se siente más fácil.",
+                "Amo que eres mi lugar seguro.",
+                "Amo tu sonrisa que ilumina la noche.",
+                "Amo cómo entiendes mi silencio."
+            ];
+
+            const grid = document.getElementById('grid-razones');
+            const mensajeFinal = document.getElementById('mensajeFinal');
+            const lluvia = document.getElementById('lluviaCorazones');
+
+            // Estados de las tarjetas
+            let estadosGirados = new Array(razones.length).fill(false);
+
+            // ========== LLUVIA DE CORAZONES ==========
+            function crearCorazon() {
+                const corazon = document.createElement('div');
+                corazon.className = 'corazon-cayendo';
+                
+                // Tamaño aleatorio
+                const tamanio = Math.random() * 1.5 + 0.8;
+                corazon.style.fontSize = tamanio + 'rem';
+                
+                // Posición horizontal aleatoria
+                corazon.style.left = Math.random() * 100 + '%';
+                
+                // Duración de la animación (entre 6 y 14 segundos)
+                corazon.style.animationDuration = (Math.random() * 8 + 6) + 's';
+                
+                // Retraso aleatorio para que no caigan todos sincronizados
+                corazon.style.animationDelay = Math.random() * 5 + 's';
+                
+                // Contenido (diferentes tipos de corazones)
+                const corazones = ['❤️', '🧡', '💖', '💗', '💓', '💕', '❤️‍🔥', '♥️'];
+                corazon.textContent = corazones[Math.floor(Math.random() * corazones.length)];
+                
+                // Opacidad aleatoria
+                corazon.style.opacity = Math.random() * 0.5 + 0.3;
+                
+                lluvia.appendChild(corazon);
+                
+                // Eliminar el corazón después de que termine su animación para no acumular elementos
+                setTimeout(() => {
+                    corazon.remove();
+                }, (parseFloat(corazon.style.animationDuration) + parseFloat(corazon.style.animationDelay)) * 1000);
+            }
+
+            // Crear corazones cada 400ms
+            setInterval(crearCorazon, 400);
+
+            // Crear algunos corazones iniciales
+            for (let i = 0; i < 15; i++) {
+                setTimeout(crearCorazon, i * 200);
+            }
+
+            // ========== TARJETAS ==========
+            function renderizarTarjetas() {
+                grid.innerHTML = '';
+
+                razones.forEach((razon, index) => {
+                    const numero = index + 1;
+                    const tarjeta = document.createElement('div');
+                    tarjeta.className = `razon ${estadosGirados[index] ? 'girada' : ''}`;
+                    tarjeta.dataset.indice = index;
+
+                    const interior = document.createElement('div');
+                    interior.className = 'interior';
+
+                    const frontal = document.createElement('div');
+                    frontal.className = 'frontal';
+                    frontal.innerHTML = `
+                        <span class="numero">${numero}</span>
+                        <span class="corazon">❤️</span>
+                    `;
+
+                    const trasera = document.createElement('div');
+                    trasera.className = 'trasera';
+                    trasera.textContent = razon;
+
+                    interior.appendChild(frontal);
+                    interior.appendChild(trasera);
+                    tarjeta.appendChild(interior);
+                    grid.appendChild(tarjeta);
+
+                    tarjeta.addEventListener('click', function(e) {
+                        const indice = parseInt(this.dataset.indice);
+                        if (!estadosGirados[indice]) {
+                            estadosGirados[indice] = true;
+                            this.classList.add('girada');
+
+                            // Crear explosión de corazones al abrir una tarjeta (opcional)
+                            for (let i = 0; i < 3; i++) {
+                                setTimeout(crearCorazon, i * 50);
+                            }
+
+                            const todasGiradas = estadosGirados.every(estado => estado === true);
+                            if (todasGiradas) {
+                                mensajeFinal.style.display = 'inline-block';
+                                // Lluvia más intensa al final
+                                for (let i = 0; i < 10; i++) {
+                                    setTimeout(crearCorazon, i * 100);
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+
+            renderizarTarjetas();
+        })();
+    </script>
+</body>
+</html>

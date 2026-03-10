@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Noche de Cine</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital@0;1&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --gold: #c9a84c;
+      --screen-glow: #b8d4f8;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      background: #050508;
+      font-family: 'Crimson Text', serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .cinema-room {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      background:
+        radial-gradient(ellipse 80% 38% at 50% -4%, rgba(184,212,248,0.09) 0%, transparent 60%),
+        linear-gradient(180deg, #080810 0%, #0d0810 38%, #140808 68%, #0a0404 100%);
+      overflow: hidden;
+    }
+
+    /* Grain */
+    .cinema-room::before {
+      content:'';
+      position:absolute; inset:0;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events:none; z-index:100;
+    }
+
+    /* ── PANTALLA ── */
+    .screen-wrap {
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 84%;
+      z-index: 4;
+    }
+
+    .screen-frame {
+      width: 100%;
+      border: 2px solid rgba(201,168,76,0.22);
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+      box-shadow: 0 0 80px rgba(184,212,248,0.12), 0 0 160px rgba(184,212,248,0.05), inset 0 0 35px rgba(0,0,0,0.85);
+      overflow: hidden;
+      background: #000;
+    }
+
+    .screen-img {
+      width: 100%;
+      max-height: 28vh;
+      display: block;
+      object-fit: contain;
+      object-position: center center;
+      opacity: 0.88;
+    }
+
+    /* Scanlines */
+    .screen-frame::after {
+      content:'';
+      position:absolute; inset:0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px);
+      pointer-events:none;
+    }
+
+    /* Haz del proyector */
+    .beam {
+      position:absolute; top:0; left:50%; transform:translateX(-50%);
+      width:72%; height:58%;
+      background: radial-gradient(ellipse 62% 88% at 50% 0%, rgba(184,212,248,0.065) 0%, transparent 70%);
+      pointer-events:none; z-index:5;
+      animation: flicker 5s ease-in-out infinite;
+    }
+    @keyframes flicker { 0%,100%{opacity:1} 28%{opacity:.72} 52%{opacity:.88} 76%{opacity:.62} }
+
+    /* Polvo en el aire */
+    .dust-layer { position:absolute; top:0; left:0; width:100%; height:62%; pointer-events:none; z-index:6; overflow:hidden; }
+    .dust { position:absolute; border-radius:50%; background:rgba(184,212,248,.52); animation:floatD linear infinite; }
+    @keyframes floatD {
+      0%   { transform:translateY(80%) translateX(0);   opacity:0; }
+      14%  { opacity:.65; }
+      88%  { opacity:.28; }
+      100% { transform:translateY(-4%) translateX(14px); opacity:0; }
+    }
+
+    /* ── BUTACAS ── */
+    .seats-section { position:absolute; bottom:0; left:0; width:100%; height:50%; overflow:hidden; }
+    .carpet { position:absolute; inset:0; background:linear-gradient(180deg,#0c0505 0%,#150606 55%,#0f0505 100%); }
+
+    .seats-row {
+      display:flex; justify-content:center; align-items:flex-end;
+      gap:clamp(3px,.9vw,11px); padding:0 4%;
+      position:relative; z-index:2;
+      margin-bottom:clamp(2px,.5vh,7px);
+    }
+
+    .seat-sil { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; }
+    .row-back  .seat-sil { width:clamp(22px,3.2vw,44px); height:clamp(35px,5vh,62px); opacity:.20; filter:blur(.4px); }
+    .row-mid   .seat-sil { width:clamp(28px,4.2vw,55px); height:clamp(45px,6.5vh,78px); opacity:.42; }
+    .row-front .seat-sil { width:clamp(34px,5.2vw,66px); height:clamp(55px,8vh,92px); opacity:.72; }
+
+    .seat-head { width:55%; aspect-ratio:1; border-radius:50% 50% 45% 45%; position:absolute; top:-28%; background:linear-gradient(150deg,#261404,#150b03); }
+    .seat-back { width:90%; height:48%; background:linear-gradient(150deg,#2e0910,#1a0507); border-radius:5px 5px 2px 2px; border:1px solid rgba(139,0,0,.18); }
+    .seat-body { width:100%; height:35%; background:linear-gradient(150deg,#400c16,#26070e); border-radius:2px 2px 6px 6px; border:1px solid rgba(139,0,0,.13); margin-top:1px; }
+
+    /* ── PERSONAJE PRINCIPAL ── */
+    .main-seat {
+      position:absolute;
+      bottom:clamp(5px,1.2vh,18px); left:50%;
+      transform:translateX(-50%);
+      z-index:20;
+    }
+
+    .char-wrap { display:flex; flex-direction:column; align-items:center; position:relative; }
+
+    /* Luz de pantalla en la cara */
+    .face-light {
+      position:absolute; top:0; left:50%; transform:translateX(-50%);
+      width:115%; height:55%;
+      background: radial-gradient(ellipse 58% 92% at 50% 0%, rgba(184,212,248,.13) 0%, transparent 70%);
+      pointer-events:none; z-index:24;
+      animation: flicker 5s ease-in-out infinite;
+    }
+
+    /* Figura del personaje */
+    .char-fig {
+      position:absolute;
+      bottom:calc(100% - clamp(16px,2.5vh,30px));
+      left:50%; transform:translateX(-50%);
+      width:clamp(72px,10.5vw,138px);
+      z-index:25;
+      filter: drop-shadow(0 -3px 16px rgba(184,212,248,.22));
+    }
+
+    .char-fig img {
+      width:100%; display:block;
+      image-rendering: pixelated;
+    }
+
+    /* Silla principal */
+    .m-back {
+      width:clamp(70px,10vw,130px); height:clamp(46px,6.8vh,85px);
+      background:linear-gradient(150deg,#480f1f,#2b0710);
+      border-radius:10px 10px 3px 3px;
+      border:1px solid rgba(201,168,76,.16);
+      box-shadow:0 0 16px rgba(139,0,0,.18);
+    }
+    .m-body {
+      width:clamp(80px,11.5vw,150px); height:clamp(26px,3.8vh,50px);
+      background:linear-gradient(150deg,#58121e,#38090e);
+      border-radius:2px 2px 8px 8px;
+      border:1px solid rgba(201,168,76,.10);
+      margin-top:2px;
+    }
+
+    /* ── LÁGRIMAS ── */
+    .tears-wrap {
+      position:absolute;
+      bottom:calc(100% - clamp(16px,2.5vh,30px));
+      left:50%; transform:translateX(-50%);
+      width:clamp(72px,10.5vw,138px);
+      height:clamp(90px,13.5vh,178px);
+      pointer-events:none; z-index:30; overflow:visible;
+    }
+
+    .tear {
+      position:absolute;
+      border-radius:50% 50% 50% 50% / 40% 40% 60% 60%;
+      background:linear-gradient(180deg,rgba(168,212,245,.95),rgba(75,165,238,.6));
+      box-shadow:0 0 5px rgba(168,212,245,.7),0 0 10px rgba(100,180,240,.3);
+      opacity:0;
+      animation:tearFall ease-in infinite;
+    }
+
+    /* Ojo izquierdo ≈ 28% desde la izquierda, 33% desde arriba */
+    .tl1{left:26%;top:33%;width:4px;height:10px;animation-duration:1.9s;animation-delay:0s}
+    .tl2{left:24%;top:33%;width:3px;height:8px; animation-duration:2.3s;animation-delay:.8s}
+    .tl3{left:28%;top:33%;width:5px;height:12px;animation-duration:1.7s;animation-delay:1.5s}
+    .tl4{left:25%;top:33%;width:3px;height:7px; animation-duration:2.6s;animation-delay:2.2s}
+    .tl5{left:27%;top:33%;width:4px;height:9px; animation-duration:2.0s;animation-delay:.5s}
+
+    /* Ojo derecho ≈ 28% desde la derecha, 33% desde arriba */
+    .tr1{right:26%;top:33%;width:4px;height:10px;animation-duration:2.1s;animation-delay:.3s}
+    .tr2{right:24%;top:33%;width:3px;height:8px; animation-duration:1.8s;animation-delay:1.2s}
+    .tr3{right:28%;top:33%;width:5px;height:12px;animation-duration:2.4s;animation-delay:1.9s}
+    .tr4{right:25%;top:33%;width:3px;height:7px; animation-duration:1.6s;animation-delay:1.0s}
+    .tr5{right:27%;top:33%;width:4px;height:9px; animation-duration:2.2s;animation-delay:2.6s}
+
+    @keyframes tearFall {
+      0%  {opacity:0;   transform:translateY(0) scaleX(1);}
+      6%  {opacity:.92;}
+      72% {opacity:.62; transform:translateY(54px) scaleX(1);}
+      92% {opacity:.28; transform:translateY(70px) scaleX(1.95);}
+      100%{opacity:0;   transform:translateY(78px) scaleX(2.4);}
+    }
+
+    /* Charco */
+    .puddle {
+      position:absolute;
+      bottom:clamp(-9px,-1.3vh,-13px); left:50%; transform:translateX(-50%);
+      width:clamp(44px,7.5vw,96px); height:clamp(6px,1vh,13px);
+      background:radial-gradient(ellipse,rgba(100,180,240,.42) 0%,rgba(100,180,240,.08) 58%,transparent 100%);
+      border-radius:50%;
+      animation:pudGrow .9s ease-in-out infinite alternate;
+      z-index:29;
+    }
+    @keyframes pudGrow{from{transform:translateX(-50%) scaleX(1);opacity:.5}to{transform:translateX(-50%) scaleX(1.2);opacity:.88}}
+
+    /* Brillo húmedo */
+    .cheek{position:absolute;border-radius:50%;background:linear-gradient(180deg,rgba(168,212,245,.62),transparent);animation:cheekP 2s ease-in-out infinite alternate;}
+    .cheek.l{left:22%;top:26%;width:clamp(2px,.4vw,5px);height:clamp(8px,1.4vh,15px);}
+    .cheek.r{right:22%;top:26%;width:clamp(2px,.4vw,5px);height:clamp(8px,1.4vh,15px);}
+    @keyframes cheekP{from{opacity:.3}to{opacity:.85}}
+
+    /* Palomitas */
+    .pop{position:absolute;z-index:22;bottom:clamp(13px,2.8vh,40px);font-size:clamp(.9rem,1.7vw,1.7rem);animation:popB 3.3s ease-in-out infinite;filter:drop-shadow(0 2px 5px rgba(201,168,76,.22));}
+    .pop.l{left:calc(50% - clamp(56px,9vw,120px));}
+    .pop.r{left:calc(50% + clamp(30px,5vw,72px));animation-delay:1.7s;}
+    @keyframes popB{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-5px) rotate(4deg)}}
+
+    /* Luces pasillo */
+    .aisle{position:absolute;bottom:0;display:flex;flex-direction:column;justify-content:space-around;align-items:center;height:30%;z-index:8;}
+    .aisle.l{left:clamp(5px,1vw,16px);width:clamp(3px,.5vw,6px);}
+    .aisle.r{right:clamp(5px,1vw,16px);width:clamp(3px,.5vw,6px);}
+    .adot{width:clamp(2px,.4vw,5px);height:clamp(2px,.4vw,5px);border-radius:50%;background:rgba(201,168,76,.52);box-shadow:0 0 5px rgba(201,168,76,.42);animation:aBlink 3s ease-in-out infinite;}
+    .adot:nth-child(2){animation-delay:.6s}.adot:nth-child(3){animation-delay:1.2s}.adot:nth-child(4){animation-delay:1.8s}
+    @keyframes aBlink{0%,100%{opacity:.5}50%{opacity:1}}
+
+    /* Cortinas */
+    .curtain{position:absolute;top:0;height:46%;z-index:7;pointer-events:none;}
+    .curtain.l{left:0;width:clamp(16px,2.2vw,36px);background:linear-gradient(90deg,#160004,#220007 60%,transparent);}
+    .curtain.r{right:0;width:clamp(16px,2.2vw,36px);background:linear-gradient(270deg,#160004,#220007 60%,transparent);}
+
+    /* Título */
+    .title{position:absolute;top:clamp(4px,.9vh,11px);left:50%;transform:translateX(-50%);font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(.45rem,.9vw,.85rem);color:rgba(201,168,76,.42);letter-spacing:.4em;text-transform:uppercase;white-space:nowrap;z-index:10;}
+
+    /* Viñeta */
+    .vignette{position:absolute;inset:0;background:radial-gradient(ellipse 86% 86% at 50% 50%,transparent 36%,rgba(0,0,0,.8) 100%);pointer-events:none;z-index:50;}
+  </style>
+</head>
+<body>
+<div class="cinema-room">
+  <div class="vignette"></div>
+  <div class="title"></div>
+  <div class="curtain l"></div>
+  <div class="curtain r"></div>
+  <div class="beam"></div>
+  <div class="dust-layer" id="dust"></div>
+
+  <!-- PANTALLA — imagen del cine (max.png) -->
+  <div class="screen-wrap">
+    <div class="screen-frame">
+      <img class="screen-img" src="max.png" alt="Película en pantalla"/>
+    </div>
+  </div>
+
+  <!-- BUTACAS -->
+  <div class="seats-section">
+    <div class="carpet"></div>
+    <div class="seats-row row-back"  id="rowBack"></div>
+    <div class="seats-row row-mid"   id="rowMid"></div>
+    <div class="seats-row row-front" id="rowFront"></div>
+  </div>
+
+  <!-- PERSONAJE (asona.png) -->
+  <div class="main-seat">
+    <div class="char-wrap">
+      <div class="face-light"></div>
+
+      <!-- Lágrimas -->
+      <div class="tears-wrap">
+        <div class="tear tl1"></div><div class="tear tl2"></div><div class="tear tl3"></div>
+        <div class="tear tl4"></div><div class="tear tl5"></div>
+        <div class="tear tr1"></div><div class="tear tr2"></div><div class="tear tr3"></div>
+        <div class="tear tr4"></div><div class="tear tr5"></div>
+        <div class="cheek l"></div><div class="cheek r"></div>
+      </div>
+
+      <!-- Imagen del personaje pixel art -->
+      <div class="char-fig">
+        <img src="asonasa.png" alt="Personaje llorando"/>
+      </div>
+
+      <div class="pop l">🍿</div>
+      <div class="pop r">🥤</div>
+      <div class="puddle"></div>
+      <div class="m-back"></div>
+      <div class="m-body"></div>
+    </div>
+  </div>
+
+  <div class="aisle l"><div class="adot"></div><div class="adot"></div><div class="adot"></div><div class="adot"></div></div>
+  <div class="aisle r"><div class="adot"></div><div class="adot"></div><div class="adot"></div><div class="adot"></div></div>
+</div>
+
+<script>
+  /* Generar butacas */
+  function seat(head) {
+    const s = document.createElement('div'); s.className = 'seat-sil';
+    if (head) { const h = document.createElement('div'); h.className = 'seat-head'; s.appendChild(h); }
+    ['seat-back','seat-body'].forEach(c => { const d = document.createElement('div'); d.className = c; s.appendChild(d); });
+    return s;
+  }
+  const back = document.getElementById('rowBack');
+  const mid  = document.getElementById('rowMid');
+  const front= document.getElementById('rowFront');
+  for (let i=0;i<13;i++) back.appendChild(seat(Math.random()>.38));
+  for (let i=0;i<10;i++) mid.appendChild(seat(Math.random()>.32));
+  for (let i=0;i<4;i++)  front.appendChild(seat(Math.random()>.4));
+  const sp = document.createElement('div');
+  sp.style.cssText = 'width:clamp(108px,15.5vw,195px);flex-shrink:0;';
+  front.appendChild(sp);
+  for (let i=0;i<4;i++) front.appendChild(seat(Math.random()>.4));
+
+  /* Polvo */
+  const dc = document.getElementById('dust');
+  for (let i=0;i<22;i++) {
+    const d = document.createElement('div'); d.className = 'dust';
+    d.style.left = (6 + Math.random()*88)+'%';
+    d.style.bottom = (Math.random()*65)+'%';
+    const sz = 1 + Math.random()*2.2;
+    d.style.width = d.style.height = sz+'px';
+    d.style.animationDuration = (7 + Math.random()*12)+'s';
+    d.style.animationDelay = (Math.random()*10)+'s';
+    d.style.opacity = (.12 + Math.random()*.52).toString();
+    dc.appendChild(d);
+  }
+</script>
+</body>
+</html>

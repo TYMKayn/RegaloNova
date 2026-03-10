@@ -1,0 +1,168 @@
+/* =========================
+   ESTILO CARTA OSCURA - KAYN STYLE
+   ========================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ---- Fondo con neblina animada ---- */
+body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    font-family: 'Cormorant Garamond', serif;
+    background: radial-gradient(circle at top, #050505, #0d0d0d, #1a1a1a);
+    overflow: hidden;
+    color: #e6e6e6;
+}
+
+/* Neblina en movimiento */
+body::before,
+body::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.05), transparent 60%);
+    animation: fogMove 70s linear infinite;
+    z-index: 0;
+}
+
+body::after {
+    background: radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.04), transparent 70%);
+    animation-delay: 35s;
+}
+
+@keyframes fogMove {
+    from { transform: translate(-10%, -10%) scale(1.1); }
+    to { transform: translate(10%, 10%) scale(1.2); }
+}
+
+/* ---- Contenedor principal ---- */
+.container {
+    max-width: 800px;
+    width: 100%;
+    position: relative;
+    z-index: 2;
+}
+
+/* ---- Carta ---- */
+.carta-container {
+    background: rgba(15, 15, 15, 0.85);
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
+    padding: 50px 40px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(6px);
+}
+
+/* ---- Cabecera ---- */
+.carta-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.carta-header h1 {
+    font-family: 'Dancing Script', cursive;
+    font-size: 3.5rem;
+    color: #9e4a63;
+    margin-bottom: 10px;
+    font-weight: 700;
+    text-shadow: 0 0 15px rgba(158, 74, 99, 0.8);
+}
+
+.fecha {
+    font-style: italic;
+    color: #a0a0a0;
+    font-size: 1.1rem;
+}
+
+/* ---- Cuerpo ---- */
+.cuerpo-carta {
+    text-align: center;
+    line-height: 2.2;
+    font-size: 1.3rem;
+    color: #dcdcdc;
+    margin-bottom: 40px;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+}
+.cuerpo-carta p {
+    margin-bottom: 30px;
+}
+
+/* ---- Firma ---- */
+.firma {
+    text-align: right;
+    margin-top: 50px;
+    font-family: 'Dancing Script', cursive;
+    font-size: 2.3rem;
+    color: #a05c6d;
+    text-shadow: 0 0 10px rgba(160, 92, 109, 0.6);
+}
+
+/* ---- Decoración ---- */
+.decoracion {
+    text-align: center;
+    margin: 30px 0;
+    color: #8e516a;
+    font-size: 1.5rem;
+}
+
+.corazon {
+    display: inline-block;
+    margin: 0 10px;
+    color: #d47189;
+    animation: latido 2s infinite;
+}
+
+@keyframes latido {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ---- Botón volver ---- */
+.btn-volver {
+    display: inline-block;
+    padding: 10px 30px;
+    background: linear-gradient(to right, #7b2244, #b33b5e);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 50px;
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 20px rgba(179, 59, 94, 0.3);
+}
+
+.btn-volver:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 30px rgba(179, 59, 94, 0.6);
+}
+
+/* ---- Responsividad ---- */
+@media (max-width: 768px) {
+    .carta-container {
+        padding: 30px 20px;
+    }
+
+    .carta-header h1 {
+        font-size: 2.8rem;
+    }
+
+    .cuerpo-carta {
+        font-size: 1.1rem;
+    }
+
+    .firma {
+        font-size: 1.8rem;
+    }
+}
